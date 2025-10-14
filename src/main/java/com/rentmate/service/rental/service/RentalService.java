@@ -21,5 +21,6 @@ public interface RentalService {
     List<Rental>  findByStatus(Status status);
     List<Rental> findByRenterIdAndStatus(Long renterId, Status status);
     void cancelRentalRequest(Long rentalId,Long renterId);
-
+    void triggerReturnsForEndedRentals();
+    void checkForLateReturns();
 }

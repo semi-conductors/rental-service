@@ -20,5 +20,6 @@ public interface RentalMapper {
     @Mapping(target = "lastModifiedDate", ignore = true)
     Rental toEntity(RentalRequestDTO dto,Long renterId);
 
+    @Mapping(target = "rentalId",source = "id")
     RentalResponseDTO toDto(Rental rental);
 }

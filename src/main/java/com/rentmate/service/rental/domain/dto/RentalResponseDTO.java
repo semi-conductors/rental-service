@@ -1,6 +1,5 @@
 package com.rentmate.service.rental.domain.dto;
 
-import com.rentmate.service.rental.domain.enumuration.DeliveryMethode;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,7 +17,6 @@ public class RentalResponseDTO {
     private BigDecimal rentalPrice;
     private BigDecimal depositAmount;
     private BigDecimal totalPrice;
-    private DeliveryMethode deliveryMethode;
     private Status status;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

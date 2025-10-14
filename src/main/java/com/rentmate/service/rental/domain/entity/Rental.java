@@ -1,16 +1,13 @@
 package com.rentmate.service.rental.domain.entity;
 
-import com.rentmate.service.rental.domain.enumuration.DeliveryMethode;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
 @Entity
@@ -28,8 +25,6 @@ public class Rental {
     private BigDecimal rentalPrice;
     private BigDecimal depositAmount;
     private BigDecimal totalPrice;
-    @Enumerated(EnumType.STRING)
-    private DeliveryMethode deliveryMethode;
     @Enumerated(EnumType.STRING)
     private Status status;
     private LocalDateTime startDate;

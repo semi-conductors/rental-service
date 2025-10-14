@@ -21,7 +21,7 @@ public class RentalController {
     private final RentalService rentalService;
     @PostMapping()
     public ResponseEntity<RentalResponseDTO> createRental(@Valid @RequestBody RentalRequestDTO rentalRequestDTO,
-                                                          @RequestHeader(value = "Idempotency-Key",required = true) UUID idemKey,
+                                                                 @RequestHeader("Idempotency-Key") UUID idemKey,
                                                           HttpServletRequest request){
         Long renterId =JwtUtils.getExtractedId(request);
         RentalResponseDTO responseDTO  = rentalService.createRental(rentalRequestDTO,renterId,idemKey);
@@ -43,7 +43,7 @@ public class RentalController {
     }
 
     @GetMapping("/{id}")
-    @ResponseStatus
+    @ResponseStatus(HttpStatus.OK)
     public RentalResponseDTO getRentalById(@PathVariable Long id){
        return rentalService.findById(id);
     }

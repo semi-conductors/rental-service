@@ -81,13 +81,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(errorResponse);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-        ErrorResponse errorResponse = new ErrorResponse(
-                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
-                "An unexpected error occurred",
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
+//        ErrorResponse errorResponse = new ErrorResponse(
+//                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+//                "An unexpected error occurred",
+//                LocalDateTime.now()
+//        );
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+//    }
 }

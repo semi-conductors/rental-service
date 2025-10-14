@@ -10,19 +10,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 
-@FeignClient(name = "item-service",url = "")
+//@FeignClient(name = "item-service",url = "")
 public interface ItemServiceClient {
     @GetMapping("/{id}")
     CustomItemResponse getItemById(@PathVariable Long itemId);
 
     @GetMapping("")
-    boolean isAvailable(@PathVariable() Long itemId,
-                        @RequestParam() @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-                        @RequestParam() @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate);
+    boolean isAvailable(@PathVariable() Long itemId);
 
     @PatchMapping("")
-    void updateAvailability(@PathVariable() Long itemId,
-                            @RequestParam() @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-                            @RequestParam() @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate);
+    void updateAvailability(@PathVariable() Long itemId , boolean availability);
 
 }

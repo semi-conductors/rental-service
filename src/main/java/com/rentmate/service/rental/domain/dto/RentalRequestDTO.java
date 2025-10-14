@@ -1,6 +1,5 @@
 package com.rentmate.service.rental.domain.dto;
 
-import com.rentmate.service.rental.domain.enumuration.DeliveryMethode;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +25,4 @@ public class RentalRequestDTO {
     @Future(message = "End date must be in the future")
     private LocalDateTime endDate;
 
-    @NotNull(message = "Delivery method is required")
-    private DeliveryMethode deliveryMethode;
 }

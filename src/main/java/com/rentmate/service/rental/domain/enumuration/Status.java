@@ -10,6 +10,7 @@ public enum Status {
     InDelivery,
     Delivered,
     InReturning,
+    Returned,
     Completed,
     LateReturning,
     Cancelled
