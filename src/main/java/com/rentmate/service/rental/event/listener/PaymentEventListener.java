@@ -3,6 +3,7 @@ package com.rentmate.service.rental.event.listener;
 import com.rentmate.service.rental.client.ItemServiceClient;
 import com.rentmate.service.rental.domain.dto.PaymentEvent;
 import com.rentmate.service.rental.domain.entity.Rental;
+import com.rentmate.service.rental.domain.enumuration.PaymentEventType;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.event.publisher.RentalEventPublisher;
 import com.rentmate.service.rental.repository.RentalRepository;
@@ -15,6 +16,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -33,14 +35,11 @@ public class PaymentEventListener {
                     "Cannot process payment event for rental in status: " + rental.getStatus());
         }
         switch (event.getEventType()){
-            case "payment.paid":
-                handlePaymentSuccess(rental);
-                break;
-            case "payment.failed":
-                handlePaymentFailed(rental);
-                break;
-            default:
-                break;
+            case PAYMENT_PAID-> handlePaymentSuccess(rental);
+
+            case PAYMENT_FAILED-> handlePaymentFailed(rental);
+
+            default->{}
 
         }
     }
@@ -49,17 +48,9 @@ public class PaymentEventListener {
     public void handlePaymentRefundEvent(PaymentEvent event){
         validateEvent(event);
         Rental rental = fetchRental(event.getRentalId());
-        switch (event.getEventType()){
-            case "payment.refunded":
-                handleSuccessRefund(rental);
-                break;
-            case "payment.refundedFailed":
-                /// not yet
-                break;
-            default:
-                break;
-
-        }
+       if (Objects.requireNonNull(event.getEventType()) == PaymentEventType.REFUNDED) {
+           handleSuccessRefund(rental);
+       }
 
     }
 
@@ -74,12 +65,12 @@ public class PaymentEventListener {
     private void handlePaymentFailed(Rental rental){
         rental.setStatus(Status.PaymentFailed);
         rentalRepository.save(rental);
-        // Notify renter about failure
-        rabbitTemplate.convertAndSend(
-                "rental.exchange",
-                "rental.statusChanged",
-                Map.of("rentalId", rental.getId(), "status", rental.getStatus().name())
-        );
+//        // Notify renter about failure
+//        rabbitTemplate.convertAndSend(
+//                "rental.exchange",
+//                "rental.statusChanged",
+//                Map.of("rentalId", rental.getId(), "status", rental.getStatus().name())
+//        );
     }
     @Transactional(rollbackOn = Exception.class)
     private void handleSuccessRefund(Rental rental){

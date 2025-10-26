@@ -4,15 +4,11 @@ import com.rentmate.service.rental.domain.enumuration.DeliveryEventType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.Nullable;
-import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeliveryEvent {
+public class DeliveryReturnEvent {
     private DeliveryEventType eventType;
     private Long rentalId;
-    @Nullable
-    private BigDecimal deliveryCost;
 }

@@ -1,10 +1,8 @@
 package com.rentmate.service.rental.config;
 
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
@@ -21,7 +19,7 @@ public class RabbitConfig {
     public static final String PAYMENT_EVENTS_QUEUE = "payment.events.queue";
     public static final String PAYMENT_RETURN_EVENTS_QUEUE = "payment.return.events.queue";
 
-    public static final String DELIVERY_ROUTING_KEY = "delivery.*"; // delivery.deliveryCost, delivery.delivered
+    public static final String DELIVERY_ROUTING_KEY = "DeliveryService.*"; // delivery.deliveryCost, delivery.delivered
     public static final String DELIVERY_RETURN_ROUTING_KEY = "delivery.return.*"; // delivery.returned, delivery.inReturning
     public static final String PAYMENT_ROUTING_KEY = "payment.*"; // payment.paid, payment.failed
     public static final String PAYMENT_RETURN_ROUTING_KEY = "payment.refund.*"; // payment.refunded

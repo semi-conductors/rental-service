@@ -25,4 +25,7 @@ public class RentalRequestDTO {
     @Future(message = "End date must be in the future")
     private LocalDateTime endDate;
 
+    @NotNull(message = "Address is required")
+    private String renterAddress;
+
 }

@@ -1,5 +1,6 @@
 package com.rentmate.service.rental.domain.dto;
 
+import com.rentmate.service.rental.domain.enumuration.PaymentEventType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentEvent {
-    private String eventType;
     private Long rentalId;
+    private PaymentEventType eventType;
 }

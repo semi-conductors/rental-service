@@ -1,5 +1,4 @@
 package com.rentmate.service.rental.event.publisher.impl;
-
 import com.rentmate.service.rental.config.RabbitConfig;
 import com.rentmate.service.rental.domain.entity.Rental;
 import com.rentmate.service.rental.domain.enumuration.Status;
@@ -20,18 +19,22 @@ import java.util.Map;
 public class RentalEventPublisherImpl implements RentalEventPublisher {
     private final RabbitTemplate rabbitTemplate;
     private final  String exchange = RabbitConfig.RENTAL_EXCHANGE;
-    public static final String RENTAL_CREATED = "rental.created";
-    public static final String RENTAL_DELIVERY_COST = "rental.cost.requested";
+    private final String DELIVERY_EXCHANGE="delivery.exchange";
+    private final String PAYMENT_EXCHANGE="payment.exchange";
+    private final String NOTIFICATION_EXCHANGE="notification.exchange";
+    private static final String RENTAL_CREATED = "rental.created";
+    private static final String RENTAL_DELIVERY_COST = "delivery.costRequested";
 
-    public static final String RENTAL_APPROVED = "rental.approved";
-    public static final String RENTAL_REJECTED = "rental.rejected";
-    public static final String RENTAL_REFUND = "rental.refund";
-    public static final String RENTAL_RETURN_REQUESTED = "rental.return.requested";
-    public static final String RENTAL_DELIVERY_REQUESTED = "rental.delivery.requested";
-    public static final String RENTAL_RETURN_LATE = "rental.return.late";
-    public static final String RENTAL_LATE_RETURN = "rental.lateReturn";
+    private static final String RENTAL_APPROVED = "payment.request";
+    private static final String RENTAL_REJECTED = "rental.rejected";
+    private static final String RENTAL_REFUND =  "payment.request";
+    private static final String RENTAL_RETURN_REQUESTED = "delivery.returnRequested";
+    private static final String RENTAL_DELIVERY_REQUESTED = "delivery.deliveryRequested";
+    private static final String RENTAL_RETURN_LATE = "delivery.lateReturn";
+    private static final String RENTAL_LATE_RETURN =  "payment.response";
 
-    public void publishEvent(String routingKey, Map<String, Object> payload) {
+
+    public void publishEvent(String exchange,String routingKey, Map<String, Object> payload) {
         try {
             rabbitTemplate.convertAndSend(exchange, routingKey, payload);
             log.info("Published event {} for rental ID: {}", routingKey, payload.get("rentalId"));
@@ -44,17 +47,21 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
     @Override
     public void publishRentalCreatedEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
+                                    .withItemId(rental.getItemId())
                                     .withStatus(rental.getStatus())
                                     .build();
-        publishEvent(RENTAL_CREATED,payLoad);
+        publishEvent(NOTIFICATION_EXCHANGE,RENTAL_CREATED,payLoad);
     }
 
     @Override
     public void publishDeliveryCostRequestEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
                 .withEventType("rental.cost.requested")
+                .withItemId(rental.getItemId())
+                .withOwnerAddress(rental.getOwnerAddress())
+                .withRenterAddress(rental.getRenterAddress())
                 .build();
-        publishEvent(RENTAL_DELIVERY_COST,payLoad);
+        publishEvent(DELIVERY_EXCHANGE,RENTAL_DELIVERY_COST,payLoad);
         log.info("Publishing rental.cost.requested event for rental ID: {}", rental.getId());
 
     }
@@ -63,8 +70,11 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
     public void publishDeliveryReturnRequestEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
                 .withEventType("rental.return.requested")
+                .withItemId(rental.getItemId())
+                .withOwnerAddress(rental.getOwnerAddress())
+                .withRenterAddress(rental.getRenterAddress())
                 .build();
-        publishEvent(RENTAL_RETURN_REQUESTED,payLoad);
+        publishEvent(DELIVERY_EXCHANGE,RENTAL_RETURN_REQUESTED,payLoad);
         log.info("Publishing rental.return.requested event for rental ID: {}", rental.getId());
 
     }
@@ -73,10 +83,12 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
     public void publishDeliveryLateReturnEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
                 .withEventType("rental.return.late")
+                .withItemId(rental.getItemId())
+                .withOwnerAddress(rental.getOwnerAddress())
+                .withRenterAddress(rental.getRenterAddress())
                 .build();
-        publishEvent(RENTAL_RETURN_LATE,payLoad);
+        publishEvent(DELIVERY_EXCHANGE,RENTAL_RETURN_LATE,payLoad);
         log.info("Publishing rental.return.late event for rental ID: {}", rental.getId());
-
 
     }
 
@@ -86,7 +98,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
                                       .withEventType("rental.lateReturn")
                                        .withDepositAmount(rental.getDepositAmount())
                                        .build();
-        publishEvent(RENTAL_LATE_RETURN,payLoad);
+        publishEvent(PAYMENT_EXCHANGE,RENTAL_LATE_RETURN,payLoad);
 
     }
 
@@ -97,7 +109,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
                 .withDepositAmount(rental.getDepositAmount())
                 .withTotalPrice(rental.getTotalPrice())
                 .build();
-        publishEvent(RENTAL_APPROVED,payLoad);
+        publishEvent(PAYMENT_EXCHANGE,RENTAL_APPROVED,payLoad);
         log.info("Publishing rental.approved event for rental ID: {}", rental.getId());
 
 
@@ -110,7 +122,8 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
                 .withEventType("rental.refund")
                 .withDepositAmount(rental.getDepositAmount())
                 .build();
-        publishEvent(RENTAL_REFUND,payLoad);
+        publishEvent(PAYMENT_EXCHANGE,RENTAL_REFUND,payLoad);
+        log.info("published refund event");
 
     }
 
@@ -118,10 +131,13 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
     public void publishDeliveryRequestEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
                 .withEventType("rental.delivery.requested")
-                .withStartDate(rental.getStartDate())
-                .withEndDate(rental.getEndDate())
+                //.withItemId(rental.getItemId())
+                .withStartDate(rental.getStartDate().toString())
+//                .withEndDate(rental.getEndDate())
+                .withOwnerAddress(rental.getOwnerAddress())
+                .withRenterAddress(rental.getRenterAddress())
                 .build();
-        publishEvent(RENTAL_DELIVERY_REQUESTED,payLoad);
+        publishEvent(DELIVERY_EXCHANGE,RENTAL_DELIVERY_REQUESTED,payLoad);
         log.info("Publishing rental.delivery.requested event for rental ID: {}", rental.getId());
 
     }
@@ -134,9 +150,14 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
              builder.payload.put("rentalId",rental.getId());
              builder.payload.put("renterId",rental.getRenterId());
              builder.payload.put("ownerId",rental.getOwnerId());
-             builder.payload.put("itemId",rental.getItemId());
              return builder;
          }
+        public EventPayloadBuilder withItemId(Long itemId){
+            if(itemId != null){
+                payload.put("itemId",itemId);
+            }
+            return this;
+        }
          public EventPayloadBuilder withStatus(Status status){
              if(status != null){
                  payload.put("status",status.name());
@@ -145,13 +166,13 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
          }
         public EventPayloadBuilder withTotalPrice(BigDecimal totalPrice){
             if(totalPrice != null){
-                payload.put("totalPrice",totalPrice);
+                payload.put("amount",totalPrice);
             }
             return this;
         }
         public EventPayloadBuilder withDepositAmount(BigDecimal depositAmount){
             if(depositAmount != null){
-                payload.put("depositAmount",depositAmount);
+                payload.put("insurance",depositAmount);
             }
             return this;
         }
@@ -161,7 +182,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
             }
             return this;
         }
-        public EventPayloadBuilder withStartDate(LocalDateTime startDate){
+        public EventPayloadBuilder withStartDate(String startDate){
              if(startDate!=null){
                  payload.put("startDate",startDate);
              }
@@ -170,6 +191,18 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
         public EventPayloadBuilder withEndDate(LocalDateTime endDate){
             if(endDate!=null){
                 payload.put("endDate",endDate);
+            }
+            return this;
+        }
+        public EventPayloadBuilder withOwnerAddress(String ownerAddress){
+            if(ownerAddress!=null){
+                payload.put("ownerAddress",ownerAddress);
+            }
+            return this;
+        }
+        public EventPayloadBuilder withRenterAddress(String renterAddress){
+            if(renterAddress!=null){
+                payload.put("renterAddress",renterAddress);
             }
             return this;
         }

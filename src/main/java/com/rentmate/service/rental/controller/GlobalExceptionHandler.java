@@ -70,6 +70,15 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
+    @ExceptionHandler(InvalidRentalPeriodException.class)
+    public ResponseEntity<ErrorResponse> handelInvalidRentalPeriodException(InvalidRentalPeriodException ex){
+        ErrorResponse errorResponse = new ErrorResponse(
+                String.valueOf(HttpStatus.BAD_REQUEST.value()),
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex) {

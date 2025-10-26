@@ -1,10 +1,12 @@
 package com.rentmate.service.rental.service;
 
+import com.rentmate.service.rental.domain.dto.PageResponseDTO;
 import com.rentmate.service.rental.domain.dto.RentalRequestDTO;
 import com.rentmate.service.rental.domain.dto.RentalResponseDTO;
 import com.rentmate.service.rental.domain.entity.Rental;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +18,7 @@ public interface RentalService {
     RentalResponseDTO rejectRental(Long ownerId,Long rentalId);
     RentalResponseDTO findById(Long rentalId);
     Rental findByIdEntity(Long rentalId);
+    PageResponseDTO<RentalResponseDTO> findByOwnerIdAndStatusIsPending(Long ownerId, int pageNum, int pageSize);
     List<Rental> findByRenterId(Long renterId);
     List<Rental>  findByOwnerId(Long ownerId);
     List<Rental>  findByStatus(Status status);

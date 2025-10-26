@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 
-//@FeignClient(name = "item-service",url = "")
+@FeignClient(name = "item-service",url = "http://localhost:8585/items")
 public interface ItemServiceClient {
     @GetMapping("/{id}")
-    CustomItemResponse getItemById(@PathVariable Long itemId);
+    CustomItemResponse getItemById(@PathVariable Long id);
 
-    @GetMapping("")
-    boolean isAvailable(@PathVariable() Long itemId);
+    @GetMapping("/{id}/isAvailabile")
+    boolean isItemAvailable(@PathVariable() Long id);
 
-    @PatchMapping("")
-    void updateAvailability(@PathVariable() Long itemId , boolean availability);
+//    @PatchMapping("")
+//    void updateAvailability(@PathVariable() Long itemId , boolean availability);
 
 }

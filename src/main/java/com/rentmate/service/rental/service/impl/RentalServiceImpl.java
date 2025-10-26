@@ -2,12 +2,10 @@ package com.rentmate.service.rental.service.impl;
 
 import com.rentmate.service.rental.client.ItemServiceClient;
 import com.rentmate.service.rental.domain.Mapper.RentalMapper;
-import com.rentmate.service.rental.domain.dto.CustomItemResponse;
-import com.rentmate.service.rental.domain.dto.ItemDetails;
-import com.rentmate.service.rental.domain.dto.RentalRequestDTO;
-import com.rentmate.service.rental.domain.dto.RentalResponseDTO;
+import com.rentmate.service.rental.domain.dto.*;
+import com.rentmate.service.rental.domain.entity.IdempotencyKey;
 import com.rentmate.service.rental.domain.entity.Rental;
-import com.rentmate.service.rental.domain.enumuration.RequestType;
+import com.rentmate.service.rental.domain.enumuration.KeyStatus;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.event.publisher.RentalEventPublisher;
 import com.rentmate.service.rental.repository.RentalRepository;
@@ -18,12 +16,16 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ import java.util.UUID;
 @Log4j2
 public class RentalServiceImpl implements RentalService {
     private static final BigDecimal DEPOSIT_PERCENTAGE = new BigDecimal("0.15");
+    private static final int BUFFER_HOURS = 4;
     private final RentalRepository rentalRepo;
     private final IdempotencyKeyService idempotencyKeyService;
     private final RentalValidator rentalValidator;
@@ -45,25 +48,23 @@ public class RentalServiceImpl implements RentalService {
     @Override
     @Transactional(rollbackOn = Exception.class)
     public RentalResponseDTO createRental(RentalRequestDTO rentalRequestDTO,Long renterId,  UUID idempotencyKey) {
-
-            Rental rental = rentalMapper.toEntity(rentalRequestDTO,renterId);
+            Rental rental = rentalMapper.toEntity(rentalRequestDTO, renterId);
             log.info("Creating rental with idempotency key: {}", idempotencyKey);
             rentalValidator.handleIdempotency(idempotencyKey);
-            rentalValidator.validateRentalDates(rental,idempotencyKey);
+            rentalValidator.validateRentalDates(rental, idempotencyKey);
             log.info("Checking availability for item ID: {}", rental.getItemId());
-            rentalValidator. validateItemOverlapping(rental.getItemId(),rental.getStartDate(),rental.getEndDate(),idempotencyKey);
-            rentalValidator. validateItemAvailability(rental.getItemId(),idempotencyKey);
+            rentalValidator.validateItemOverlapping(rental.getItemId(), rental.getStartDate(), rental.getEndDate(), BUFFER_HOURS, idempotencyKey);
+            rentalValidator.validateItemAvailability(rental.getItemId(), idempotencyKey);
             log.info("Fetching item details for item ID: {}", rental.getItemId());
-            enrichRentalWithItemDetails(rental,idempotencyKey);
+            enrichRentalWithItemDetails(rental, idempotencyKey);
             log.info("Saving rental with ID: {}", rental.getId());
             rentalRepo.save(rental);
 
             log.info("Publishing rental.created event for rental ID: {}", rental.getId());
+            finalizeIdempotency(idempotencyKey, rental.getId());
             // publish event to user service (owner)
             rentalEventPublisher.publishRentalCreatedEvent(rental);
-            finalizeIdempotency(idempotencyKey,rental.getId());
             log.info("Rental created successfully with ID: {}", rental.getId());
-
             return rentalMapper.toDto(rental);
 
     }
@@ -116,7 +117,8 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional(rollbackOn = Exception.class)
-    @Scheduled(cron = "0 0 * * * *")
+    //@Scheduled(cron = "0 0 * * * *")
+     @Scheduled(cron = "0 */5 * * * *")
     public void triggerReturnsForEndedRentals() {
         LocalDateTime date = LocalDateTime.now();
       List<Rental> rentals = rentalRepo.findByStatusAndEndDateBefore(Status.Delivered,date);
@@ -127,10 +129,11 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional(rollbackOn = Exception.class)
+   // @Scheduled(cron = "0 */5 * * * *")
     @Scheduled(cron = "0 0 * * * *")
     public void checkForLateReturns() {
         LocalDateTime date = LocalDateTime.now();
-        List<Rental> lateRentals = rentalRepo.findByStatusAndEndDateBefore(Status.Delivered,date.minusHours(24));
+        List<Rental> lateRentals = rentalRepo.findByStatusAndEndDateBefore(Status.Delivered,date.minusHours(BUFFER_HOURS));
         for (Rental rental:lateRentals) {
              if(rental.getStatus() == Status.Delivered){
                  rental.setStatus(Status.LateReturning);
@@ -148,6 +151,26 @@ public class RentalServiceImpl implements RentalService {
         return  rentalRepo.findById(rentalId)
                 .orElseThrow(() -> new NotFoundException("Rental Not Found With Id: "+rentalId));
     }
+
+    @Override
+    public PageResponseDTO<RentalResponseDTO> findByOwnerIdAndStatusIsPending(Long ownerId, int pageNum, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNum, pageSize);
+        Page<Rental> rentals= rentalRepo.findByOwnerIdAndStatus(ownerId,Status.Pending,pageable);
+        if(rentals.isEmpty() ){
+           throw  new NotFoundException("No Rentals For Owner With Id: "+ownerId);
+        }
+        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
+        return new PageResponseDTO<>(
+                dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getSize(),
+                dtoPage.getTotalElements(),
+                dtoPage.getTotalPages(),
+                dtoPage.isLast()
+        );
+
+    }
+
     @Override
     public RentalResponseDTO findById(Long rentalId) {
         return rentalMapper.toDto(findByIdEntity(rentalId));
@@ -181,7 +204,8 @@ public class RentalServiceImpl implements RentalService {
             }
                 ItemDetails itemDetails = new ItemDetails();
                 itemDetails.setOwnerId(itemResponse.getOwnerId());
-                itemDetails.setRentalPrice(itemResponse.getRentalPrice());
+                itemDetails.setRentalPrice(BigDecimal.valueOf(itemResponse.getRentalPrice()));
+                itemDetails.setOwnerAddress(itemResponse.getOwnerAddress());
                 return itemDetails;
     }
 
@@ -190,13 +214,28 @@ public class RentalServiceImpl implements RentalService {
         ItemDetails itemDetails = extractItemDetails(rental.getItemId(),idempotencyKey);
         rental.setOwnerId(itemDetails.getOwnerId());
         BigDecimal dailyRentalPrice = itemDetails.getRentalPrice();
-        long rentalDays = ChronoUnit.DAYS.between(rental.getStartDate(), rental.getEndDate())+1;
+        long rentalDays =calculateRentalDays(rental.getStartDate(), rental.getEndDate());
         rental.setRentalPrice(dailyRentalPrice.multiply(BigDecimal.valueOf(rentalDays)));
         rental.setDepositAmount(rental.getRentalPrice().multiply(DEPOSIT_PERCENTAGE));
         rental.setTotalPrice(rental.getRentalPrice().add(rental.getDepositAmount()));
+        rental.setOwnerAddress(itemDetails.getOwnerAddress());
         rental.setStatus(Status.Pending);
 
     }
+    private long calculateRentalDays(LocalDateTime startDate, LocalDateTime endDate) {
+        Duration duration = Duration.between(
+                           startDate.withSecond(0).withNano(0),
+                           endDate.withSecond(0).withNano(0));
+        long totalDays = duration.toDays();
+        if(duration.toHoursPart() !=0 || duration.toMinutesPart()!=0){
+            totalDays+=1;
+        }
+        if (totalDays<1){
+            totalDays=1;
+        }
+        return totalDays;
+    }
+
     private void finalizeIdempotency(UUID idempotencyKey, Long rentalId){
         if (idempotencyKey!=null){
             log.info("Attaching rental ID: {} to idempotency key: {}", rentalId, idempotencyKey);

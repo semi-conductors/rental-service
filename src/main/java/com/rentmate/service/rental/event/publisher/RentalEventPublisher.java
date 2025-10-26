@@ -5,7 +5,7 @@ import com.rentmate.service.rental.domain.entity.Rental;
 import java.util.Map;
 
 public interface RentalEventPublisher {
-     void publishEvent(String routingKey, Map<String, Object> payload);
+     void publishEvent(String exchange,String routingKey, Map<String, Object> payload);
     void publishRentalCreatedEvent(Rental rental);
     void publishDeliveryCostRequestEvent(Rental rental);
     void publishDeliveryReturnRequestEvent(Rental rental);

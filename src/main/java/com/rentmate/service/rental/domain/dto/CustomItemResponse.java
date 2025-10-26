@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomItemResponse {
-    String name;
-    Long ownerId;
-    BigDecimal rentalPrice;
-
+   private String title;
+   private Long ownerId;
+   private Double rentalPrice;
+   private String ownerAddress;
 }

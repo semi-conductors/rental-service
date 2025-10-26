@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ItemDetails {
-    Long ownerId;
-    BigDecimal rentalPrice;
+    private Long ownerId;
+    private BigDecimal rentalPrice;
+    private String ownerAddress;
 }

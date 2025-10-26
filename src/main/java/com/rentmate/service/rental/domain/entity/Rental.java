@@ -19,18 +19,25 @@ public class Rental {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(nullable = false)
     private Long itemId;
+    @Column(nullable = false)
     private  Long ownerId;
+    @Column(nullable = false)
     private Long renterId;
     private BigDecimal rentalPrice;
     private BigDecimal depositAmount;
     private BigDecimal totalPrice;
     @Enumerated(EnumType.STRING)
     private Status status;
+    @Column(nullable = false)
     private LocalDateTime startDate;
+    @Column(nullable = false)
     private LocalDateTime  endDate;
     @CreatedDate
     private Date createdDate;
     @LastModifiedDate
     private Date lastModifiedDate;
+    private String ownerAddress;
+    private String renterAddress;
 }

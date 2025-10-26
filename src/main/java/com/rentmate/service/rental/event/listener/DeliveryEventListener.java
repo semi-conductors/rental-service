@@ -1,7 +1,8 @@
 package com.rentmate.service.rental.event.listener;
-
 import com.rentmate.service.rental.domain.dto.DeliveryEvent;
+import com.rentmate.service.rental.domain.dto.DeliveryReturnEvent;
 import com.rentmate.service.rental.domain.entity.Rental;
+import com.rentmate.service.rental.domain.enumuration.DeliveryEventType;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.event.publisher.RentalEventPublisher;
 import com.rentmate.service.rental.repository.RentalRepository;
@@ -10,12 +11,8 @@ import com.rentmate.service.rental.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
-
-
 import java.math.BigDecimal;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -28,33 +25,25 @@ public class DeliveryEventListener {
         validateEvent(event);
         Rental rental = fetchRental(event.getRentalId());
         switch (event.getEventType()){
-            case "delivery.deliveryCost":
-                handleDeliveryCost(rental,event);
-                break;
-            case "delivery.delivered":
+            case DELIVERY_COST -> handleDeliveryCost(rental,event);
+            case DELIVERED->{
                 rental.setStatus(Status.Delivered);
                 rentalRepository.save(rental);
-                break;
-            default:
-                break;
+            }
+            default->{}
 
         }
 
     }
     @Transactional(rollbackOn = Exception.class)
     @RabbitListener(queues = "delivery.return.events.queue")
-    public void handleDeliveryReturnEvent(DeliveryEvent event){
-        validateEvent(event);
+    public void handleDeliveryReturnEvent(DeliveryReturnEvent event){
+        validateReturnEvent(event);
         Rental rental = fetchRental(event.getRentalId());
         switch (event.getEventType()){
-            case"delivery.returned":
-                handleSuccessfulReturn(rental);
-                break;
-            case "delivery.inReturning":
-                handleInReturningStatus(rental);
-                break;
-            default:
-                break;
+            case DELIVERY_RETURNED-> handleSuccessfulReturn(rental);
+            case DELIVERY_IN_RETURNING-> handleInReturningStatus(rental);
+            default->{}
         }
 
     }
@@ -88,7 +77,16 @@ public class DeliveryEventListener {
         if (event.getEventType() == null || event.getRentalId() == null) {
             throw new IllegalArgumentException("Invalid event payload");
         }
+        if (DeliveryEventType.DELIVERY_COST.equals(event.getEventType()) && event.getDeliveryCost() == null) {
+            throw new IllegalArgumentException("Missing delivery cost for deliveryCost event");
+        }
     }
+    private void validateReturnEvent(DeliveryReturnEvent event) {
+        if (event.getEventType() == null || event.getRentalId() == null) {
+            throw new IllegalArgumentException("Invalid event payload");
+        }
+    }
+
 
 
 
