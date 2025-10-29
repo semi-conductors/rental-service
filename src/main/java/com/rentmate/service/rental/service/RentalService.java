@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RentalService {
-    RentalResponseDTO createRental(RentalRequestDTO rentalRequestDTO,Long renterId, UUID idempotencyKey);
+    RentalResponseDTO createRental(RentalRequestDTO rentalRequestDTO,Long renterId);
     RentalResponseDTO approveRental(Long ownerId,Long rentalId);
     RentalResponseDTO rejectRental(Long ownerId,Long rentalId);
     RentalResponseDTO findById(Long rentalId);

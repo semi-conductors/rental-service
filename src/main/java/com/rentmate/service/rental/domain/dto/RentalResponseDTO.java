@@ -18,6 +18,7 @@ public class RentalResponseDTO {
     private BigDecimal depositAmount;
     private BigDecimal totalPrice;
     private Status status;
+    private String renterAddress;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Date createdDate;

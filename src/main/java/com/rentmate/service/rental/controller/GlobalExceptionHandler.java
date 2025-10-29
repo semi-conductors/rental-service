@@ -2,6 +2,7 @@ package com.rentmate.service.rental.controller;
 
 import com.rentmate.service.rental.domain.dto.ErrorResponse;
 import com.rentmate.service.rental.shared.exception.*;
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -89,14 +90,25 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(ex.getStatusCode()).body(errorResponse);
     }
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorResponse> handleFeignException(FeignException ex) {
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
-//        ErrorResponse errorResponse = new ErrorResponse(
-//                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
-//                "An unexpected error occurred",
-//                LocalDateTime.now()
-//        );
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-//    }
+        ErrorResponse errorResponse = new ErrorResponse(
+                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                "Error while calling item service. " ,
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(errorResponse);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+                "An unexpected error occurred",
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
 }

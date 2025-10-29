@@ -3,9 +3,7 @@ package com.rentmate.service.rental.service.impl;
 import com.rentmate.service.rental.client.ItemServiceClient;
 import com.rentmate.service.rental.domain.Mapper.RentalMapper;
 import com.rentmate.service.rental.domain.dto.*;
-import com.rentmate.service.rental.domain.entity.IdempotencyKey;
 import com.rentmate.service.rental.domain.entity.Rental;
-import com.rentmate.service.rental.domain.enumuration.KeyStatus;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.event.publisher.RentalEventPublisher;
 import com.rentmate.service.rental.repository.RentalRepository;
@@ -25,12 +23,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Log4j2
@@ -38,7 +34,6 @@ public class RentalServiceImpl implements RentalService {
     private static final BigDecimal DEPOSIT_PERCENTAGE = new BigDecimal("0.15");
     private static final int BUFFER_HOURS = 4;
     private final RentalRepository rentalRepo;
-    private final IdempotencyKeyService idempotencyKeyService;
     private final RentalValidator rentalValidator;
     private final RentalEventPublisher rentalEventPublisher;
     private final ItemServiceClient itemServiceClient;
@@ -47,21 +42,18 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional(rollbackOn = Exception.class)
-    public RentalResponseDTO createRental(RentalRequestDTO rentalRequestDTO,Long renterId,  UUID idempotencyKey) {
+    public RentalResponseDTO createRental(RentalRequestDTO rentalRequestDTO,Long renterId) {
             Rental rental = rentalMapper.toEntity(rentalRequestDTO, renterId);
-            log.info("Creating rental with idempotency key: {}", idempotencyKey);
-            rentalValidator.handleIdempotency(idempotencyKey);
-            rentalValidator.validateRentalDates(rental, idempotencyKey);
+            rentalValidator.checkDuplicateRequest(rental.getItemId(),rental.getRenterId());
+            rentalValidator.validateRentalDates(rental);
             log.info("Checking availability for item ID: {}", rental.getItemId());
-            rentalValidator.validateItemOverlapping(rental.getItemId(), rental.getStartDate(), rental.getEndDate(), BUFFER_HOURS, idempotencyKey);
-            rentalValidator.validateItemAvailability(rental.getItemId(), idempotencyKey);
+            rentalValidator.validateItemOverlapping(rental.getItemId(), rental.getStartDate(), rental.getEndDate(), BUFFER_HOURS);
+            rentalValidator.validateItemAvailability(rental.getItemId());
             log.info("Fetching item details for item ID: {}", rental.getItemId());
-            enrichRentalWithItemDetails(rental, idempotencyKey);
+            enrichRentalWithItemDetails(rental);
             log.info("Saving rental with ID: {}", rental.getId());
             rentalRepo.save(rental);
-
             log.info("Publishing rental.created event for rental ID: {}", rental.getId());
-            finalizeIdempotency(idempotencyKey, rental.getId());
             // publish event to user service (owner)
             rentalEventPublisher.publishRentalCreatedEvent(rental);
             log.info("Rental created successfully with ID: {}", rental.getId());
@@ -196,10 +188,9 @@ public class RentalServiceImpl implements RentalService {
         return  rentalRepo.findByRenterIdAndStatus(renterId,status);
     }
 
-    private ItemDetails extractItemDetails(Long itemId,UUID idempotencyKey) {
+    private ItemDetails extractItemDetails(Long itemId) {
             CustomItemResponse itemResponse = itemServiceClient.getItemById(itemId);
             if (itemResponse == null) {
-                idempotencyKeyService.markAsFailed(idempotencyKey);
                 throw new NotFoundException("Item not found with ID: " + itemId);
             }
                 ItemDetails itemDetails = new ItemDetails();
@@ -210,8 +201,8 @@ public class RentalServiceImpl implements RentalService {
     }
 
 
-    private void enrichRentalWithItemDetails(Rental rental,UUID idempotencyKey){
-        ItemDetails itemDetails = extractItemDetails(rental.getItemId(),idempotencyKey);
+    private void enrichRentalWithItemDetails(Rental rental){
+        ItemDetails itemDetails = extractItemDetails(rental.getItemId());
         rental.setOwnerId(itemDetails.getOwnerId());
         BigDecimal dailyRentalPrice = itemDetails.getRentalPrice();
         long rentalDays =calculateRentalDays(rental.getStartDate(), rental.getEndDate());
@@ -236,14 +227,7 @@ public class RentalServiceImpl implements RentalService {
         return totalDays;
     }
 
-    private void finalizeIdempotency(UUID idempotencyKey, Long rentalId){
-        if (idempotencyKey!=null){
-            log.info("Attaching rental ID: {} to idempotency key: {}", rentalId, idempotencyKey);
-            idempotencyKeyService.attachRentalId(idempotencyKey, rentalId);
-            idempotencyKeyService.markAsCompleted(idempotencyKey);
-        }
 
-    }
 
 
 }

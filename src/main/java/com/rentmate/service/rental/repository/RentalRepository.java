@@ -21,6 +21,8 @@ public interface RentalRepository extends JpaRepository<Rental,Long> {
     Page<Rental> findByOwnerIdAndStatus(Long ownerId, Status status, Pageable pageable);
     List<Rental> findByStatusAndEndDateBefore(Status status,LocalDateTime endDate);
 
+    boolean existsByItemIdAndRenterIdAndStatus(Long itemId,Long renterId,Status status);
+
     @Query("""
     SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
     FROM Rental r
