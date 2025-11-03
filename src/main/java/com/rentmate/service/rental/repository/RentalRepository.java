@@ -14,10 +14,10 @@ import java.util.List;
 
 @Repository
 public interface RentalRepository extends JpaRepository<Rental,Long> {
-    List<Rental> findByRenterId(Long renterId);
+    Page<Rental> findByRenterId(Long renterId, Pageable pageable);
     List<Rental>  findByOwnerId(Long ownerId);
     List<Rental>  findByStatus(Status status);
-    List<Rental> findByRenterIdAndStatus(Long renterId, Status status);
+    Page<Rental> findByRenterIdAndStatus(Long renterId, Status status, Pageable pageable);
     Page<Rental> findByOwnerIdAndStatus(Long ownerId, Status status, Pageable pageable);
     List<Rental> findByStatusAndEndDateBefore(Status status,LocalDateTime endDate);
 

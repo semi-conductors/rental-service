@@ -7,6 +7,7 @@ import com.rentmate.service.rental.domain.entity.Rental;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,11 +20,11 @@ public interface RentalService {
     RentalResponseDTO findById(Long rentalId);
     Rental findByIdEntity(Long rentalId);
     PageResponseDTO<RentalResponseDTO> findByOwnerIdAndStatusIsPending(Long ownerId, int pageNum, int pageSize);
-    List<Rental> findByRenterId(Long renterId);
+     PageResponseDTO<RentalResponseDTO> findByRenterId(Long renterId, int pageNum, int pageSize);
     List<Rental>  findByOwnerId(Long ownerId);
     List<Rental>  findByStatus(Status status);
-    List<Rental> findByRenterIdAndStatus(Long renterId, Status status);
-    void cancelRentalRequest(Long rentalId,Long renterId);
+    PageResponseDTO<RentalResponseDTO>findByRenterIdAndStatus(Long renterId, Status status,int pageNum, int pageSize);
+    void cancelRentalRequest(Long rentalId,Long renterId );
     void triggerReturnsForEndedRentals();
     void checkForLateReturns();
 }

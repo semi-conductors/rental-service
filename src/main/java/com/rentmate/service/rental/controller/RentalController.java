@@ -6,6 +6,7 @@ import com.rentmate.service.rental.domain.dto.CustomItemResponse;
 import com.rentmate.service.rental.domain.dto.PageResponseDTO;
 import com.rentmate.service.rental.domain.dto.RentalRequestDTO;
 import com.rentmate.service.rental.domain.dto.RentalResponseDTO;
+import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.service.RentalService;
 import com.rentmate.service.rental.shared.utility.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import java.util.UUID;
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -65,17 +68,35 @@ public class RentalController {
         Long ownerId = 14250L;
         return rentalService.findByOwnerIdAndStatusIsPending(ownerId,pageNum,pageSize);
     }
+
+    @GetMapping("/renter/{status}")
+    @ResponseStatus(HttpStatus.OK)
+    public PageResponseDTO<RentalResponseDTO> getRentalsByRenterIdAndStatus(@PathVariable Status status,@RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "10")  int pageSize,HttpServletRequest request){
+       //Long renterId =jwtUtils.getExtractedId(request);
+        Long renterId=14232L;
+        return rentalService.findByRenterIdAndStatus(renterId,status,pageNum,pageSize);
+    }
+    @GetMapping("/renter")
+    @ResponseStatus(HttpStatus.OK)
+    public PageResponseDTO<RentalResponseDTO> getRentalsByRenterId(@RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "10")  int pageSize,HttpServletRequest request){
+        //Long renterId =jwtUtils.getExtractedId(request);
+        Long renterId=14232L;
+        return rentalService.findByRenterId(renterId,pageNum,pageSize);
+    }
+
+
     @GetMapping("/items/{id}")
     public ResponseEntity<CustomItemResponse> getItemById(@PathVariable Long id) {
         CustomItemResponse item = itemServiceClient.getItemById(id);
         return ResponseEntity.ok(item);
     }
 
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelRental(@PathVariable Long id,HttpServletRequest request){
         //Long renterId =jwtUtils.getExtractedId(request);
-        Long renterId=2L;
+        Long renterId=14232L;
         rentalService.cancelRentalRequest(id,renterId);
     }
 

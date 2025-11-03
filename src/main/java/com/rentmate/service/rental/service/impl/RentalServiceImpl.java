@@ -71,6 +71,7 @@ public class RentalServiceImpl implements RentalService {
         rentalRepo.save(rental);
         log.info("Rental ID: {} approved successfully", rentalId);
         rentalEventPublisher.publishDeliveryCostRequestEvent(rental);
+        // make any methode connect with submit payment form
         return rentalMapper.toDto(rental);
     }
     @Override
@@ -162,6 +163,24 @@ public class RentalServiceImpl implements RentalService {
         );
 
     }
+    @Override
+    public PageResponseDTO<RentalResponseDTO> findByRenterIdAndStatus(Long renterId, Status status, int pageNum, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNum, pageSize);
+        Page<Rental> rentals= rentalRepo.findByRenterIdAndStatus(renterId,status,pageable);
+        if(rentals.isEmpty() ){
+            throw  new NotFoundException("No Rentals For this renter");
+        }
+        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
+        return new PageResponseDTO<>(
+                dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getSize(),
+                dtoPage.getTotalElements(),
+                dtoPage.getTotalPages(),
+                dtoPage.isLast()
+        );
+    }
+
 
     @Override
     public RentalResponseDTO findById(Long rentalId) {
@@ -169,8 +188,21 @@ public class RentalServiceImpl implements RentalService {
     }
 
     @Override
-    public List<Rental> findByRenterId(Long renterId) {
-        return rentalRepo.findByRenterId(renterId);
+    public PageResponseDTO<RentalResponseDTO> findByRenterId(Long renterId, int pageNum, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNum, pageSize);
+        Page<Rental> rentals= rentalRepo.findByRenterId(renterId,pageable);
+        if(rentals.isEmpty() ){
+            throw  new NotFoundException("No Rentals For this renter");
+        }
+        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
+        return new PageResponseDTO<>(
+                dtoPage.getContent(),
+                dtoPage.getNumber(),
+                dtoPage.getSize(),
+                dtoPage.getTotalElements(),
+                dtoPage.getTotalPages(),
+                dtoPage.isLast()
+        );
     }
 
     @Override
@@ -183,10 +215,6 @@ public class RentalServiceImpl implements RentalService {
         return rentalRepo.findByStatus(status);
     }
 
-    @Override
-    public List<Rental> findByRenterIdAndStatus(Long renterId, Status status) {
-        return  rentalRepo.findByRenterIdAndStatus(renterId,status);
-    }
 
     private ItemDetails extractItemDetails(Long itemId) {
             CustomItemResponse itemResponse = itemServiceClient.getItemById(itemId);
