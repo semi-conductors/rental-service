@@ -90,17 +90,6 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(ex.getStatusCode()).body(errorResponse);
     }
-    @ExceptionHandler(FeignException.class)
-    public ResponseEntity<ErrorResponse> handleFeignException(FeignException ex) {
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()),
-                "Error while calling item service. " ,
-                LocalDateTime.now()
-        );
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(errorResponse);
-    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {

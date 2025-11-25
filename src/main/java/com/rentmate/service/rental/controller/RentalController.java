@@ -30,9 +30,7 @@ public class RentalController {
     @PostMapping()
     public ResponseEntity<RentalResponseDTO> createRental(@Valid @RequestBody RentalRequestDTO rentalRequestDTO,
                                                           HttpServletRequest request){
-//        Long renterId =jwtUtils.getExtractedId(request);
-        Long renterId=14232L;
-       // Long renterId=142L;
+        Long renterId =jwtUtils.getExtractedId(request);
         RentalResponseDTO responseDTO  = rentalService.createRental(rentalRequestDTO,renterId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
@@ -40,16 +38,14 @@ public class RentalController {
     @PatchMapping("/{id}/approve")
     @ResponseStatus(HttpStatus.OK)
     public RentalResponseDTO approveRental(@PathVariable Long id,HttpServletRequest request){
-//        Long ownerId =jwtUtils.getExtractedId(request);
-        Long ownerId = 14250L;
+        Long ownerId =jwtUtils.getExtractedId(request);
         return rentalService.approveRental(ownerId,id);
 
     }
     @PatchMapping("/{id}/reject")
     @ResponseStatus(HttpStatus.OK)
     public RentalResponseDTO rejectRental(@PathVariable Long id,HttpServletRequest request){
-       // Long ownerId =jwtUtils.getExtractedId(request);
-        Long ownerId = 14250L;
+        Long ownerId =jwtUtils.getExtractedId(request);
         return rentalService.rejectRental(ownerId,id);
     }
 
@@ -63,24 +59,22 @@ public class RentalController {
     @ResponseStatus(HttpStatus.OK)
     public PageResponseDTO<RentalResponseDTO> getRentalByOwnerId(
                                                                  @RequestParam(defaultValue = "0") int pageNum,
-                                                                 @RequestParam(defaultValue = "10")  int pageSize){
-        // Long ownerId =jwtUtils.getExtractedId(request);
-        Long ownerId = 14250L;
+                                                                 @RequestParam(defaultValue = "10")  int pageSize,
+                                                                 HttpServletRequest request){
+         Long ownerId =jwtUtils.getExtractedId(request);
         return rentalService.findByOwnerIdAndStatusIsPending(ownerId,pageNum,pageSize);
     }
 
     @GetMapping("/renter/{status}")
     @ResponseStatus(HttpStatus.OK)
     public PageResponseDTO<RentalResponseDTO> getRentalsByRenterIdAndStatus(@PathVariable Status status,@RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "10")  int pageSize,HttpServletRequest request){
-       //Long renterId =jwtUtils.getExtractedId(request);
-        Long renterId=14232L;
+        Long renterId =jwtUtils.getExtractedId(request);
         return rentalService.findByRenterIdAndStatus(renterId,status,pageNum,pageSize);
     }
     @GetMapping("/renter")
     @ResponseStatus(HttpStatus.OK)
     public PageResponseDTO<RentalResponseDTO> getRentalsByRenterId(@RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "10")  int pageSize,HttpServletRequest request){
-        //Long renterId =jwtUtils.getExtractedId(request);
-        Long renterId=14232L;
+        Long renterId =jwtUtils.getExtractedId(request);
         return rentalService.findByRenterId(renterId,pageNum,pageSize);
     }
 
@@ -95,8 +89,7 @@ public class RentalController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelRental(@PathVariable Long id,HttpServletRequest request){
-        //Long renterId =jwtUtils.getExtractedId(request);
-        Long renterId=14232L;
+        Long renterId =jwtUtils.getExtractedId(request);
         rentalService.cancelRentalRequest(id,renterId);
     }
 

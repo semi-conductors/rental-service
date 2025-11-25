@@ -1,5 +1,4 @@
 package com.rentmate.service.rental.event.publisher.impl;
-import com.rentmate.service.rental.config.RabbitConfig;
 import com.rentmate.service.rental.domain.entity.Rental;
 import com.rentmate.service.rental.domain.enumuration.Status;
 import com.rentmate.service.rental.event.publisher.RentalEventPublisher;
@@ -18,20 +17,18 @@ import java.util.Map;
 @Log4j2
 public class RentalEventPublisherImpl implements RentalEventPublisher {
     private final RabbitTemplate rabbitTemplate;
-    private final  String exchange = RabbitConfig.RENTAL_EXCHANGE;
     private final String DELIVERY_EXCHANGE="delivery.exchange";
     private final String PAYMENT_EXCHANGE="payment.exchange";
-    private final String NOTIFICATION_EXCHANGE="notification.exchange";
-    private static final String RENTAL_CREATED = "rental.created";
+    private final String NOTIFICATION_EXCHANGE="notification-exchange";
     private static final String RENTAL_DELIVERY_COST = "delivery.costRequested";
 
     private static final String RENTAL_APPROVED = "payment.request";
-    private static final String RENTAL_REJECTED = "rental.rejected";
     private static final String RENTAL_REFUND =  "payment.request";
     private static final String RENTAL_RETURN_REQUESTED = "delivery.returnRequested";
     private static final String RENTAL_DELIVERY_REQUESTED = "delivery.deliveryRequested";
     private static final String RENTAL_RETURN_LATE = "delivery.lateReturn";
     private static final String RENTAL_LATE_RETURN =  "payment.response";
+    private final String NOTIFICATION_KEY="notification.key";
 
 
     public void publishEvent(String exchange,String routingKey, Map<String, Object> payload) {
@@ -44,14 +41,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
             throw new RuntimeException("Failed to publish event: " + routingKey, e);
         }
     }
-    @Override
-    public void publishRentalCreatedEvent(Rental rental) {
-        Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
-                                    .withItemId(rental.getItemId())
-                                    .withStatus(rental.getStatus())
-                                    .build();
-        publishEvent(NOTIFICATION_EXCHANGE,RENTAL_CREATED,payLoad);
-    }
+
 
     @Override
     public void publishDeliveryCostRequestEvent(Rental rental) {
@@ -131,9 +121,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
     public void publishDeliveryRequestEvent(Rental rental) {
         Map<String,Object> payLoad = EventPayloadBuilder.create(rental)
                 .withEventType("rental.delivery.requested")
-                //.withItemId(rental.getItemId())
                 .withStartDate(rental.getStartDate().toString())
-//                .withEndDate(rental.getEndDate())
                 .withOwnerAddress(rental.getOwnerAddress())
                 .withRenterAddress(rental.getRenterAddress())
                 .build();
@@ -142,8 +130,47 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
 
     }
 
+    @Override
+    public void publishRentalRejectedEvent(Long renterId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", renterId);
+        payload.put("eventType", "RENTAL_REJECTED");
+        payload.put("params", Map.of(
+                "message", "Your rental request has been rejected."
+        ));
+        publishEvent(NOTIFICATION_EXCHANGE,NOTIFICATION_KEY,payload);
+    }
+
+    @Override
+    public void publishRentalApprovedEvent(Long renterId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", renterId);
+        payload.put("eventType", "RENTAL_APPROVED");
+        payload.put("params", Map.of(
+                "message", "Your rental request has been approved. Delivery cost is now being processed."
+        ));
+
+        publishEvent(NOTIFICATION_EXCHANGE,NOTIFICATION_KEY,payload);
+
+    }
+
+    @Override
+    public void publishRentalCreatedEvent(Long ownerId) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", ownerId);
+        payload.put("eventType", "RENTAL_CREATED");
+        payload.put("params", Map.of(
+                "message", "You have a new rental request waiting for your review."
+        ));
+
+        publishEvent(NOTIFICATION_EXCHANGE,NOTIFICATION_KEY,payload);
+
+    }
+
+
     public static class EventPayloadBuilder {
         private final Map<String, Object> payload = new HashMap<>();
+
 
          public static EventPayloadBuilder create(Rental rental){
              EventPayloadBuilder builder = new EventPayloadBuilder();
@@ -152,6 +179,7 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
              builder.payload.put("ownerId",rental.getOwnerId());
              return builder;
          }
+
         public EventPayloadBuilder withItemId(Long itemId){
             if(itemId != null){
                 payload.put("itemId",itemId);
@@ -206,9 +234,17 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
             }
             return this;
         }
+        public EventPayloadBuilder withMessage(String message){
+            if(message!=null){
+                payload.put("message",message);
+            }
+            return this;
+        }
         public Map<String, Object> build() {
             return payload;
         }
+
+
     }
 
 }

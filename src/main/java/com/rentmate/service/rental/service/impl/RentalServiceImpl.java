@@ -37,7 +37,6 @@ public class RentalServiceImpl implements RentalService {
     private final RentalValidator rentalValidator;
     private final RentalEventPublisher rentalEventPublisher;
     private final ItemServiceClient itemServiceClient;
-    private final RabbitTemplate rabbitTemplate;
     private final RentalMapper rentalMapper;
 
     @Override
@@ -54,8 +53,7 @@ public class RentalServiceImpl implements RentalService {
             log.info("Saving rental with ID: {}", rental.getId());
             rentalRepo.save(rental);
             log.info("Publishing rental.created event for rental ID: {}", rental.getId());
-            // publish event to user service (owner)
-            rentalEventPublisher.publishRentalCreatedEvent(rental);
+            rentalEventPublisher.publishRentalCreatedEvent(rental.getOwnerId());
             log.info("Rental created successfully with ID: {}", rental.getId());
             return rentalMapper.toDto(rental);
 
@@ -66,12 +64,11 @@ public class RentalServiceImpl implements RentalService {
     public RentalResponseDTO approveRental(Long ownerId,Long rentalId) {
         log.info("Approving rental ID: {} by owner ID: {}", rentalId, ownerId);
          Rental rental= rentalValidator.validateRentalForOwnerDecision(ownerId,rentalId);
-
         rental.setStatus(Status.Approved);
         rentalRepo.save(rental);
         log.info("Rental ID: {} approved successfully", rentalId);
         rentalEventPublisher.publishDeliveryCostRequestEvent(rental);
-        // make any methode connect with submit payment form
+        rentalEventPublisher.publishRentalApprovedEvent(rental.getRenterId());
         return rentalMapper.toDto(rental);
     }
     @Override
@@ -79,14 +76,9 @@ public class RentalServiceImpl implements RentalService {
     public RentalResponseDTO rejectRental(Long ownerId,Long rentalId) {
         log.info("Rejecting rental ID: {} by owner ID: {}", rentalId, ownerId);
          Rental rental = rentalValidator.validateRentalForOwnerDecision(ownerId,rentalId);
-
         rental.setStatus(Status.Rejected);
          rentalRepo.save(rental);
-        rabbitTemplate.convertAndSend("rental.exchange", "rental.rejected", Map.of(
-                "rentalId", rental.getId(),
-                "status", rental.getStatus().name()
-        ));
-
+        rentalEventPublisher.publishRentalRejectedEvent(rental.getRenterId());
         return rentalMapper.toDto(rental);
     }
 
@@ -104,8 +96,7 @@ public class RentalServiceImpl implements RentalService {
          }
          existedRental.setStatus(Status.Cancelled);
          rentalRepo.save(existedRental);
-         // send notification
-        // in progress
+
     }
 
     @Override
@@ -122,8 +113,8 @@ public class RentalServiceImpl implements RentalService {
 
     @Override
     @Transactional(rollbackOn = Exception.class)
-   // @Scheduled(cron = "0 */5 * * * *")
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */5 * * * *")
+   // @Scheduled(cron = "0 0 * * * *")
     public void checkForLateReturns() {
         LocalDateTime date = LocalDateTime.now();
         List<Rental> lateRentals = rentalRepo.findByStatusAndEndDateBefore(Status.Delivered,date.minusHours(BUFFER_HOURS));

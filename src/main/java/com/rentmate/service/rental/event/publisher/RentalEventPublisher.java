@@ -6,7 +6,6 @@ import java.util.Map;
 
 public interface RentalEventPublisher {
      void publishEvent(String exchange,String routingKey, Map<String, Object> payload);
-    void publishRentalCreatedEvent(Rental rental);
     void publishDeliveryCostRequestEvent(Rental rental);
     void publishDeliveryReturnRequestEvent(Rental rental);
    void publishDeliveryLateReturnEvent(Rental rental);
@@ -14,5 +13,8 @@ public interface RentalEventPublisher {
      void publishPaymentEvent(Rental rental);
     void publishRefundEvent(Rental rental);
     void publishDeliveryRequestEvent(Rental rental);
+    void publishRentalRejectedEvent(Long renterId);
+    void publishRentalApprovedEvent(Long renterId);
+    void publishRentalCreatedEvent(Long ownerId);
 
 }
