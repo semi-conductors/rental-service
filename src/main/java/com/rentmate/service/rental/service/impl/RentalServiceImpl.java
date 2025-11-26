@@ -1,6 +1,7 @@
 package com.rentmate.service.rental.service.impl;
 
 import com.rentmate.service.rental.client.ItemServiceClient;
+import com.rentmate.service.rental.domain.Mapper.PageMapper;
 import com.rentmate.service.rental.domain.Mapper.RentalMapper;
 import com.rentmate.service.rental.domain.dto.*;
 import com.rentmate.service.rental.domain.entity.Rental;
@@ -38,6 +39,7 @@ public class RentalServiceImpl implements RentalService {
     private final RentalEventPublisher rentalEventPublisher;
     private final ItemServiceClient itemServiceClient;
     private final RentalMapper rentalMapper;
+    private final PageMapper pageMapper;
 
     @Override
     @Transactional(rollbackOn = Exception.class)
@@ -143,15 +145,7 @@ public class RentalServiceImpl implements RentalService {
         if(rentals.isEmpty() ){
            throw  new NotFoundException("No Rentals For Owner With Id: "+ownerId);
         }
-        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
-        return new PageResponseDTO<>(
-                dtoPage.getContent(),
-                dtoPage.getNumber(),
-                dtoPage.getSize(),
-                dtoPage.getTotalElements(),
-                dtoPage.getTotalPages(),
-                dtoPage.isLast()
-        );
+        return pageMapper.toPageResponseDTO(rentals,rentalMapper::toDto);
 
     }
     @Override
@@ -161,15 +155,7 @@ public class RentalServiceImpl implements RentalService {
         if(rentals.isEmpty() ){
             throw  new NotFoundException("No Rentals For this renter");
         }
-        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
-        return new PageResponseDTO<>(
-                dtoPage.getContent(),
-                dtoPage.getNumber(),
-                dtoPage.getSize(),
-                dtoPage.getTotalElements(),
-                dtoPage.getTotalPages(),
-                dtoPage.isLast()
-        );
+        return pageMapper.toPageResponseDTO(rentals,rentalMapper::toDto);
     }
 
 
@@ -185,20 +171,21 @@ public class RentalServiceImpl implements RentalService {
         if(rentals.isEmpty() ){
             throw  new NotFoundException("No Rentals For this renter");
         }
-        Page<RentalResponseDTO> dtoPage= rentals.map(rentalMapper::toDto);
-        return new PageResponseDTO<>(
-                dtoPage.getContent(),
-                dtoPage.getNumber(),
-                dtoPage.getSize(),
-                dtoPage.getTotalElements(),
-                dtoPage.getTotalPages(),
-                dtoPage.isLast()
-        );
+       return pageMapper.toPageResponseDTO(rentals,rentalMapper::toDto);
     }
 
     @Override
-    public List<Rental> findByOwnerId(Long ownerId) {
-        return rentalRepo.findByOwnerId(ownerId);
+    public PageResponseDTO<RentalResponseDTO>  findByOwnerId(Long ownerId,String status,int pageNum,int pageSize) {
+       Pageable pageable = PageRequest.of(pageNum,pageSize);
+       Page<Rental> rentals;
+       if(status == null || status.isBlank())
+            rentals = rentalRepo.findByOwnerId(ownerId,pageable);
+       else
+            rentals = rentalRepo.findByOwnerIdAndStatus(ownerId,Status.valueOf(status),pageable);
+        if(rentals.isEmpty() ){
+            throw  new NotFoundException("No Rentals For Owner With Id: "+ownerId);
+        }
+        return pageMapper.toPageResponseDTO(rentals,rentalMapper::toDto);
     }
 
     @Override

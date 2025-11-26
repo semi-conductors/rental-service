@@ -65,12 +65,6 @@ public class PaymentEventListener {
     private void handlePaymentFailed(Rental rental){
         rental.setStatus(Status.PaymentFailed);
         rentalRepository.save(rental);
-//        // Notify renter about failure
-//        rabbitTemplate.convertAndSend(
-//                "rental.exchange",
-//                "rental.statusChanged",
-//                Map.of("rentalId", rental.getId(), "status", rental.getStatus().name())
-//        );
     }
     @Transactional(rollbackOn = Exception.class)
     private void handleSuccessRefund(Rental rental){

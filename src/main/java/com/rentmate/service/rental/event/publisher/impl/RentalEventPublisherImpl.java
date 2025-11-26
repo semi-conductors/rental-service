@@ -101,9 +101,6 @@ public class RentalEventPublisherImpl implements RentalEventPublisher {
                 .build();
         publishEvent(PAYMENT_EXCHANGE,RENTAL_APPROVED,payLoad);
         log.info("Publishing rental.approved event for rental ID: {}", rental.getId());
-
-
-
     }
 
     @Override

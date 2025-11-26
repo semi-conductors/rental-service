@@ -64,6 +64,18 @@ public class RentalController {
          Long ownerId =jwtUtils.getExtractedId(request);
         return rentalService.findByOwnerIdAndStatusIsPending(ownerId,pageNum,pageSize);
     }
+    @GetMapping("/all/owner")
+    @ResponseStatus(HttpStatus.OK)
+    public PageResponseDTO<RentalResponseDTO> getAllRentalsByOwnerId(
+                                              @RequestParam(defaultValue = "0") int pageNum,
+                                              @RequestParam(defaultValue = "10")  int pageSize,
+                                              @RequestParam(required = false) String status,
+                                              HttpServletRequest request){
+        Long ownerId =jwtUtils.getExtractedId(request);
+        return rentalService.findByOwnerId(ownerId,status,pageNum,pageSize);
+    }
+
+
 
     @GetMapping("/renter/{status}")
     @ResponseStatus(HttpStatus.OK)

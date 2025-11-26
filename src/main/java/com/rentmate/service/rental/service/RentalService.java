@@ -21,7 +21,7 @@ public interface RentalService {
     Rental findByIdEntity(Long rentalId);
     PageResponseDTO<RentalResponseDTO> findByOwnerIdAndStatusIsPending(Long ownerId, int pageNum, int pageSize);
      PageResponseDTO<RentalResponseDTO> findByRenterId(Long renterId, int pageNum, int pageSize);
-    List<Rental>  findByOwnerId(Long ownerId);
+    PageResponseDTO<RentalResponseDTO>   findByOwnerId(Long ownerId ,String status,int pageNum, int pageSize);
     List<Rental>  findByStatus(Status status);
     PageResponseDTO<RentalResponseDTO>findByRenterIdAndStatus(Long renterId, Status status,int pageNum, int pageSize);
     void cancelRentalRequest(Long rentalId,Long renterId );
